@@ -20,6 +20,8 @@ class Phone(Field):
             raise ValueError("Phone cannot be empty")
         if len(value) != 10:
             raise ValueError("Phone must be 10 digits")
+        if not value.isdigit():
+            raise ValueError("Phone must contain only digits")
         super().__init__(value)
 
 class Record:
@@ -31,21 +33,22 @@ class Record:
         self.phones.append(Phone(phone)) 
     
     def remove_phone(self, phone: str) -> None:
-        self.phones = [p for p in self.phones if p.value != phone]
+        phone_to_remove = self.find_phone(phone)
+        if phone_to_remove is None:
+            raise ValueError("Phone not found")
+        self.phones.remove(phone_to_remove)
     
     def edit_phone(self, old_phone: str, new_phone: str) -> None:
-        for i, phone in enumerate(self.phones):
-            if phone.value == old_phone:
-                self.phones[i] = Phone(new_phone)
-                break
-            else:
-                raise ValueError("Phone not found")
-    
-    def find_phone(self, phone: str) -> Phone:
-        for p in self.phones:
-            if p.value == phone:
-                return p
-        return None
+       if self.find_phone(old_phone) is None:
+           raise ValueError("Phone not found")
+       self.add_phone(new_phone)
+       self.remove_phone(old_phone)
+        
+    def find_phone(self, phone: str):
+       for p in self.phones:
+           if p.value == phone:
+               return p
+       return None
 
     def __str__(self):
         return f"Contact name: {self.name.value}, phones: {'; '.join(p.value for p in self.phones)}"
@@ -53,14 +56,17 @@ class Record:
 class AddressBook(UserDict):
     def add_record(self, record: Record) -> None:
         self.data[record.name.value] = record
-    def find(self, name: str) -> Record:
+    
+    def find(self, name: str) -> Record | None:
         if name not in self.data:
-            raise ValueError("Contact not found")
+            return None 
         return self.data[name]
+    
     def delete(self, name: str) -> None:
         if name not in self.data:
             raise ValueError("Contact not found")
         del self.data[name] 
+    
     def __str__(self):
         if not self.data:
             return "Address book is empty"
